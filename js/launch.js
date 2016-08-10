@@ -6,7 +6,7 @@ module.exports = function ($) {
     var areasList = [];
     var activeBtn = [];
 
-    function launch (configFile, shareUrlInfo) {
+    function launch (configFile, shareUrlInfo, settings) {
         var deactivateActiveOpenLayersControls = require("./deactivate_controls.js")(this, activeBtn);
         var printMap = require("./print.js")($, this);
         var setupCollapsibleSublists = require("./accordion_collapsible_sublist_setup.js")($);
@@ -14,6 +14,8 @@ module.exports = function ($) {
         var app = this;
 
         var $configXML;
+
+        app.settings = settings;
 
         $.ajax({
             url: configFile,
@@ -81,7 +83,10 @@ module.exports = function ($) {
         });
         app.addListener("themechange", function () {
             app.updateShareMapUrl();
-            setupCollapsibleSublists.bind(app)();
+            if (app.settings) { 
+                //setupCollapsibleSublists.bind(app)()
+                app.setupCollapsibleSublists()
+            };
         });
         app.addListener("baselayerchange", function () {
             app.updateShareMapUrl();

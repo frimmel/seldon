@@ -13,31 +13,37 @@ module.exports = function ($) {
 module.exports = function ($) {
     function setupCollapsibleSublists () {
         var app = this;
+        if (app.settings && app.settings.collapsibleLists) {
+            var collapseConfig = app.settings['collapsible-lists'];
+            collapseConfig.forEach(function (obj) {
+                if (obj.theme === app.currentTheme.label) {
+                    for (var i=0; i<obj.sections.length; i++) {
+                        if (obj.sections[i] === app.currentAccordionGroup.label) {
+                            setupCollapsibleSublistClickHandler();
+                        }
+                    }
+                }
+            })
+        }
+    }
 
+    function setupCollapsibleSublistClickHandler() {
         // Set a click handler on accordion section sublist headers
         $('.ui-accordion-content h4').on('click', function (event) {
             var $this = $(this);
-            // Only trigger a collapse on a specific accordion section within the archived themen
-            // The section we want is always the fifth accordion section;
-            // we use its seldon-generated id attribute.
-            if (app.currentTheme.label === 'Archived Near-Real-Time Change Maps (MODIS NDVI)' &&
-                $this.parent().parent().attr('id') === 'ui-accordion-layerPickerAccordion-panel-4') {
-                // If the sublist is collapsed, uncollapse it and set the header icon
-                var $sublist = $this.siblings('.layer-group');
-                var $icon = $this.children('.ui-icon')
-                if ($sublist.hasClass('collapsed')) {
-                    $sublist.removeClass('collapsed');
-                    $icon.removeClass('ui-icon-triangle-1-e');
-                    $icon.addClass('ui-icon-triangle-1-s');
-                } else {
+            var $sublist = $this.siblings('.layer-group');
+            var $icon = $this.children('.ui-icon')
+            if ($sublist.hasClass('collapsed')) {
+                $sublist.removeClass('collapsed');
+                $icon.removeClass('ui-icon-triangle-1-e');
+                $icon.addClass('ui-icon-triangle-1-s');
+            } else {
                 // If the sublist is uncollapse, collapse it and set the header icon
-                    $sublist.addClass('collapsed');
-                    $icon.removeClass('ui-icon-triangle-1-s');
-                    $icon.addClass('ui-icon-triangle-1-e');
-                }
+                $sublist.addClass('collapsed');
+                $icon.removeClass('ui-icon-triangle-1-s');
+                $icon.addClass('ui-icon-triangle-1-e');
             }
-
-        })
+        });
     }
     return setupCollapsibleSublists;
 }
@@ -762,13 +768,13 @@ module.exports = function ($, app) {
 module.exports = function (app) {
     var ShareUrlInfo = require('./share.js');
 
-    function init (config, projection, gisServerType, useProxyScript) {
+    function init (config, projection,  settings, gisServerType, useProxyScript) {
         var shareUrlInfo = ShareUrlInfo.parseUrl(window.location.toString());
         app.projection = projection;
         seldon.projection = projection;
         seldon.gisServerType = gisServerType;
         seldon.useProxyScript = useProxyScript;
-        app.launch(config, shareUrlInfo);
+        app.launch(config, shareUrlInfo, settings);
         seldon.app = app;
     }
 
@@ -872,7 +878,7 @@ module.exports = function ($) {
     var areasList = [];
     var activeBtn = [];
 
-    function launch (configFile, shareUrlInfo) {
+    function launch (configFile, shareUrlInfo, settings) {
         var deactivateActiveOpenLayersControls = require("./deactivate_controls.js")(this, activeBtn);
         var printMap = require("./print.js")($, this);
         var setupCollapsibleSublists = require("./accordion_collapsible_sublist_setup.js")($);
@@ -880,6 +886,8 @@ module.exports = function ($) {
         var app = this;
 
         var $configXML;
+
+        app.settings = settings;
 
         $.ajax({
             url: configFile,
@@ -947,7 +955,10 @@ module.exports = function ($) {
         });
         app.addListener("themechange", function () {
             app.updateShareMapUrl();
-            setupCollapsibleSublists.bind(app)();
+            if (app.settings) { 
+                //setupCollapsibleSublists.bind(app)()
+                app.setupCollapsibleSublists()
+            };
         });
         app.addListener("baselayerchange", function () {
             app.updateShareMapUrl();
